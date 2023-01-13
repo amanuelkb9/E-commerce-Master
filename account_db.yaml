@@ -1,0 +1,102 @@
+# Define a 'Service' To Expose MySQL to Other Services
+apiVersion: v1
+kind: Service
+metadata:
+  name: accountdb
+  labels:
+    app: accountdb
+    version: v1
+    tier: database
+spec:
+  ports:
+    - port: 3307
+      name: sql
+      targetPort: 3307
+  selector:
+    app: accountdb
+    tier: database
+    version: v1
+  clusterIP: None # DNS is used, so clusterIP is not needed
+
+---
+# Define a 'Persistent Volume Claim'(PVC) for MySQL Storage, dynamically provisioned by cluster
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: accountdb-pv-claim # name of PVC essential for identifying the storage data
+  labels:
+    app: accountdb
+    tier: database
+    version: v1
+spec:
+  accessModes:
+    - ReadWriteOnce   #This specifies the mode of the claim that we are trying to create.
+  resources:
+    requests:
+      storage: 200Mi    #This will tell kubernetes about the amount of space we are trying to claim.
+
+---
+# Deployment specification begins here
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: accountdb
+  labels:
+    app: accountdb
+    version: v1
+    tier: database
+spec:
+  selector: # mySQL Pod Should contain same labels
+    matchLabels:
+      app: accountdb
+      version: v1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels: # Must match 'Service' and 'Deployment' selectors
+        app: accountdb
+        tier: database
+        version: v1
+    spec:
+      containers:
+        - name: accountdb
+          image: mysql
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: root
+            - name: MYSQL_DATABASE
+              value: account
+          ports:
+            - containerPort: 3307
+              name: mysql
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: mysql-accountdb-storage
+      volumes:
+        - name: mysql-accountdb-storage
+          persistentVolumeClaim:
+            claimName: accountdb-pv-claim
+#---
+##policy
+#apiVersion: security.istio.io/v1beta1
+#kind: PeerAuthentication
+#metadata:
+#  name: "mysql-peer-mlts"
+#  namespace: "default"
+#spec:
+#  selector:
+#    matchLabels:
+#      app: accountdb
+#  mtls:
+#    mode: STRICT
+#---
+#apiVersion: networking.istio.io/v1alpha3
+#kind: DestinationRule
+#metadata:
+#  name: mysql-mtls-dr
+#spec:
+#  host: accountdb    # The name of *your* K8s Service
+#  trafficPolicy:
+#    tls:
+#      mode: ISTIO_MUTUAL

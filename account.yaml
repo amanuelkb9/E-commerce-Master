@@ -1,0 +1,47 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: account-deployment
+spec:
+  selector:
+    matchLabels:
+      app: account
+      version: v1
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: account
+        version: v1
+    spec:
+      containers:
+        - name: account
+          image: leonahoms/account
+          ports:
+            - containerPort: 9091
+          env:   # Setting Environmental Variables
+            - name: DB_HOST   # Setting Database host address
+              value: accountdb
+            - name: DB_NAME  # Setting Database name
+              value: account
+            - name: DB_USERNAME  # Setting Database username
+              value: root
+            - name: DB_PASSWORD # Setting Database password
+              value: root
+---
+# Define a 'Service' To Expose the application
+apiVersion: v1
+kind: Service
+metadata:
+  name: account-service
+spec:
+  ports:
+    - name: "acc"
+      protocol: "TCP"
+      port: 9091    # Port inside the cluster
+      targetPort: 9091   # Port exposed to the outside
+  selector:
+    app: account
+    version: v1
+  type: ClusterIP

@@ -1,0 +1,43 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-deployment
+spec:
+  selector:
+    matchLabels:
+      app: product
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: product
+    spec:
+      containers:
+        - name: product
+          image: leonahoms/product
+          ports:
+            - containerPort: 9096
+          env:   # Setting Environmental Variables
+            - name: DB_HOST   # Setting Database host address
+              value: productdb
+            - name: DB_NAME  # Setting Database name
+              value: product
+            - name: DB_USERNAME  # Setting Database username
+              value: root
+            - name: DB_PASSWORD # Setting Database password
+              value: root
+---
+# Define a 'Service' To Expose the application
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+spec:
+  ports:
+    - protocol: "TCP"
+      port: 9096    # Port inside the cluster
+      targetPort: 9096   # Port exposed to the outside
+  selector:
+    app: product
+  type: ClusterIP
