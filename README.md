@@ -1,9 +1,4 @@
 # Microservices Based Spring Boot
-
-## Medium articles on the project
-https://medium.com/@nahomnegdem/spring-boot-microservices-to-build-an-ecommerce-application-12e05f58e895
-
-
 ## How to run the project
 
 - Make sure you have docker setup on your machine
